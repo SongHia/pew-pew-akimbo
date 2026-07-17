@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Pew Pew Akimbo — a webcam finger-gun shooting gallery played with both hands">
+  <title>Pew Pew Akimbo 🔫</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+  <div id="gameContainer">
+    <!-- Webcam feed (mirrored via CSS) -->
+    <video id="webcam" autoplay playsinline muted></video>
+
+    <!-- Canvas overlay for targets, crosshairs, and effects -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- =================== TITLE SCREEN =================== -->
+    <div id="titleScreen" class="overlay-screen">
+      <div class="screen-content">
+        <h1 id="gameTitle">PEW PEW<br>AKIMBO</h1>
+        <p class="tagline">
+          👆🔫 Make finger guns with both hands.<br>
+          Drop your thumb to <strong>FIRE!</strong> 🔫👆
+        </p>
+
+        <div class="instructions">
+          <div class="instruction-step">
+            <span class="step-icon">✊</span>
+            <span class="step-text">Make a fist, then extend your <strong>index finger</strong></span>
+          </div>
+          <div class="instruction-step">
+            <span class="step-icon">👍</span>
+            <span class="step-text">Stick your <strong>thumb up</strong> to cock the gun</span>
+          </div>
+          <div class="instruction-step">
+            <span class="step-icon">👇</span>
+            <span class="step-text"><strong>Drop your thumb</strong> down to fire a shot</span>
+          </div>
+          <div class="instruction-step">
+            <span class="step-icon">🎈</span>
+            <span class="step-text">Pop balloons before they escape — <strong>hit fast</strong> for combo points!</span>
+          </div>
+        </div>
+
+        <div class="powerups-section">
+          <h2 class="powerups-title">⚡ POWER-UPS ⚡</h2>
+          <p class="powerups-hint">Earn by hitting a <strong>5x combo</strong> or when you lose a life!</p>
+          <div class="powerups-grid">
+            <div class="powerup-card" style="--pu-color: #00e5ff">
+              <span class="powerup-icon">🧊</span>
+              <span class="powerup-name">Freeze</span>
+              <span class="powerup-desc">All balloons freeze in place for 5s</span>
+            </div>
+            <div class="powerup-card" style="--pu-color: #ff9cf5">
+              <span class="powerup-icon">🐾</span>
+              <span class="powerup-name">Cat Paws</span>
+              <span class="powerup-desc">Giant paw auto-pops on contact — no trigger needed! 8s</span>
+            </div>
+          </div>
+        </div>
+
+        <button id="startBtn" class="neon-btn">⚡ START GAME ⚡</button>
+        <p class="privacy-note">
+          🔒 All detection runs locally in your browser.<br>
+          No video data ever leaves your device.
+        </p>
+      </div>
+    </div>
+
+    <!-- =================== LOADING SCREEN =================== -->
+    <div id="loadingScreen" class="overlay-screen hidden">
+      <div class="screen-content">
+        <div class="loader"></div>
+        <p class="loading-text">Initializing hand tracking…</p>
+        <p class="loading-sub">This may take a moment on first load</p>
+      </div>
+    </div>
+
+    <!-- =================== CAMERA-DENIED SCREEN =================== -->
+    <div id="deniedScreen" class="overlay-screen hidden">
+      <div class="screen-content">
+        <h2 class="denied-title">📷 Camera Access Required</h2>
+        <p class="denied-body">Pew Pew Akimbo needs your camera to track finger guns.</p>
+        <p class="denied-body">Please allow camera access and try again.</p>
+        <button id="retryBtn" class="neon-btn">🔄 Try Again</button>
+      </div>
+    </div>
+
+    <!-- =================== HUD (during gameplay) =================== -->
+    <div id="hud" class="hidden">
+      <div id="scoreDisplay">
+        <span id="scoreLabel">SCORE</span>
+        <span id="scoreValue">0</span>
+      </div>
+      <div id="comboDisplay" class="hidden">
+        <span id="comboValue">x2</span>
+      </div>
+      <div id="livesDisplay"></div>
+      <div id="handIndicators">
+        <div id="leftIndicator" class="hand-indicator">
+          <span class="indicator-icon">🔫</span>
+          <span class="indicator-label">LEFT</span>
+        </div>
+        <div id="rightIndicator" class="hand-indicator">
+          <span class="indicator-icon">🔫</span>
+          <span class="indicator-label">RIGHT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================== GAME OVER SCREEN =================== -->
+    <div id="gameOverScreen" class="overlay-screen hidden">
+      <div class="screen-content">
+        <h2 id="gameOverTitle">GAME OVER</h2>
+        <div id="finalScoreDisplay">
+          <span class="final-label">FINAL SCORE</span>
+          <span id="finalScoreValue">0</span>
+        </div>
+        <p id="verdictText"></p>
+
+        <!-- High Score Entry Form -->
+        <div id="highScoreForm" class="hidden">
+          <h3 class="high-score-title">✨ NEW HIGH SCORE! ✨</h3>
+          <p class="high-score-subtitle">Enter name/initials (up to 7 chars)</p>
+          <div class="input-container">
+            <input type="text" id="playerNameInput" maxlength="7" placeholder="PILOT" autocomplete="off">
+            <button id="submitScoreBtn" class="neon-btn-small">SUBMIT</button>
+          </div>
+        </div>
+
+        <!-- Leaderboard Section -->
+        <div id="leaderboardSection" class="hidden">
+          <h3 class="leaderboard-title">🏆 LEADERBOARD 🏆</h3>
+          <div class="leaderboard-loading" id="leaderboardLoading">Loading scores...</div>
+          <table class="leaderboard-table hidden" id="leaderboardTable">
+            <thead>
+              <tr>
+                <th>RANK</th>
+                <th>NAME</th>
+                <th>SCORE</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardBody">
+              <!-- Populated via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <button id="restartBtn" class="neon-btn">🔁 PLAY AGAIN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MediaPipe import map (must precede the module script) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs"
+    }
+  }
+  </script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
